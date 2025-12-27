@@ -13,23 +13,52 @@ A simple command-line tool for tracking blood pressure readings with configurabl
 
 ## Installation
 
-### Install from source
+### Quick Install (Recommended)
+
+Clone the repository and run the install script:
 
 ```bash
-pip install -e .
+git clone https://github.com/zythros/blood-pressure-tracker.git
+cd blood-pressure-tracker
+./install.sh
 ```
 
-Or install dependencies manually:
+The install script will:
+- Check for Python 3 and PyYAML
+- Offer to install PyYAML if not present
+- Create a `bp-tracker` command in `~/.local/bin`
+- Add `~/.local/bin` to your PATH if needed
+
+After installation, you can use `bp-tracker` from anywhere!
+
+### Manual Installation
+
+If you prefer to install manually:
 
 ```bash
-pip install -r requirements.txt
+# Install PyYAML (Arch Linux)
+sudo pacman -S python-yaml
+
+# Or on Debian/Ubuntu
+sudo apt install python3-yaml
+
+# Clone the repository
+git clone https://github.com/zythros/blood-pressure-tracker.git
+cd blood-pressure-tracker
+
+# Run directly
+python3 -m bp_tracker.main
 ```
 
-Then run directly:
+### Uninstall
+
+To uninstall:
 
 ```bash
-python -m bp_tracker.main
+./uninstall.sh
 ```
+
+This removes the `bp-tracker` command but preserves your data and configuration.
 
 ## Usage
 
