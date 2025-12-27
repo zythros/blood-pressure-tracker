@@ -89,20 +89,13 @@ echo -n "Creating bp-tracker command... "
 cat > "$WRAPPER_SCRIPT" << EOF
 #!/bin/bash
 # Blood Pressure Tracker wrapper script
+# Set PYTHONPATH to include the source directory
+export PYTHONPATH="$SCRIPT_DIR:\$PYTHONPATH"
 exec python3 -m bp_tracker.main "\$@"
 EOF
 
 chmod +x "$WRAPPER_SCRIPT"
 echo -e "${GREEN}✓${NC} $WRAPPER_SCRIPT"
-
-# Create symlink to the package
-echo -n "Linking to source code... "
-PACKAGE_LINK="$INSTALL_DIR/bp_tracker"
-if [ -L "$PACKAGE_LINK" ]; then
-    rm "$PACKAGE_LINK"
-fi
-ln -s "$SCRIPT_DIR/bp_tracker" "$PACKAGE_LINK"
-echo -e "${GREEN}✓${NC} Linked"
 
 # Create default configuration
 CONFIG_DIR="$HOME/.config/bp-tracker"
