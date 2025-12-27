@@ -54,3 +54,6 @@ dmypy.json
 # Local config and data (for testing)
 *.csv
 config.yaml
+
+# Local documentation (not for public repo)
+PROJECT_CONTEXT.md
