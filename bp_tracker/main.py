@@ -108,6 +108,63 @@ def setup_config_command(args: argparse.Namespace, config: Config) -> None:
         print(f"Configuration initialized at: {config.config_path}")
 
 
+def list_readings_command(args: argparse.Namespace, config: Config) -> None:
+    """Display past blood pressure readings from CSV file.
+
+    Args:
+        args: Parsed command-line arguments
+        config: Config instance
+    """
+    try:
+        csv_path = config.get_csv_path()
+        storage = CSVStorage(csv_path)
+
+        if not csv_path.exists():
+            print(f"No readings found. CSV file does not exist: {csv_path}", file=sys.stderr)
+            print(f"\nLog your first reading with: bp-tracker <systolic> <diastolic> <bpm>")
+            sys.exit(1)
+
+        readings = storage.read_all()
+
+        if not readings:
+            print("No readings found in CSV file.")
+            return
+
+        # Determine how many readings to show
+        if args.all:
+            readings_to_show = readings
+        elif args.last:
+            readings_to_show = readings[-args.last:]
+        else:
+            # Default: show last 10 readings
+            readings_to_show = readings[-10:]
+
+        # Print header
+        print(f"\nBlood Pressure Readings (from {csv_path})")
+        print("=" * 60)
+        print(f"{'Date':<12} {'Time':<10} {'BP (mmHg)':<15} {'BPM':<5}")
+        print("-" * 60)
+
+        # Print readings
+        for reading in readings_to_show:
+            bp_reading = f"{reading['Systolic']}/{reading['Diastolic']}"
+            print(f"{reading['Date']:<12} {reading['Time']:<10} {bp_reading:<15} {reading['BPM']:<5}")
+
+        print("-" * 60)
+        print(f"Total readings shown: {len(readings_to_show)} of {len(readings)}")
+        print()
+
+    except StorageError as e:
+        print(f"Storage Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except KeyError as e:
+        print(f"CSV Format Error: Missing column {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def create_reading_parser() -> argparse.ArgumentParser:
     """Create argument parser for blood pressure readings.
 
@@ -120,6 +177,7 @@ def create_reading_parser() -> argparse.ArgumentParser:
         epilog='Examples:\n'
                '  bp-tracker 120 80 72          # Log reading via command line\n'
                '  bp-tracker                    # Interactive mode\n'
+               '  bp-tracker list               # View past readings\n'
                '  bp-tracker config --show      # Show configuration',
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -160,10 +218,47 @@ def create_config_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def create_list_parser() -> argparse.ArgumentParser:
+    """Create argument parser for list command.
+
+    Returns:
+        Configured ArgumentParser for list
+    """
+    parser = argparse.ArgumentParser(
+        prog='bp-tracker list',
+        description='View past blood pressure readings'
+    )
+
+    parser.add_argument('--all', action='store_true',
+                       help='Show all readings')
+    parser.add_argument('--last', type=int, metavar='N',
+                       help='Show last N readings (default: 10)')
+    parser.add_argument('--config', type=str, metavar='PATH',
+                       help='Path to config file (default: ~/.config/bp-tracker/config.yaml)')
+
+    return parser
+
+
 def main():
     """Main entry point for the CLI application."""
+    # Check if first argument is 'list' command
+    if len(sys.argv) > 1 and sys.argv[1] == 'list':
+        # Use list parser
+        parser = create_list_parser()
+        args = parser.parse_args(sys.argv[2:])  # Parse args after 'list'
+
+        try:
+            config_path = Path(args.config) if args.config else None
+            config = Config(config_path)
+            list_readings_command(args, config)
+        except ConfigError as e:
+            print(f"Configuration Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"Unexpected Error: {e}", file=sys.stderr)
+            sys.exit(1)
     # Check if first argument is 'config' command
-    if len(sys.argv) > 1 and sys.argv[1] == 'config':
+    elif len(sys.argv) > 1 and sys.argv[1] == 'config':
         # Use config parser
         parser = create_config_parser()
         args = parser.parse_args(sys.argv[2:])  # Parse args after 'config'

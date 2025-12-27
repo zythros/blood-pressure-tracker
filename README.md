@@ -88,6 +88,34 @@ The tool will prompt you for:
 2. Diastolic pressure
 3. Heart rate (BPM)
 
+### View past readings
+
+View your blood pressure history:
+
+```bash
+# Show last 10 readings (default)
+bp-tracker list
+
+# Show last 5 readings
+bp-tracker list --last 5
+
+# Show all readings
+bp-tracker list --all
+```
+
+Example output:
+```
+Blood Pressure Readings (from ~/.local/share/bp-tracker/blood_pressure.csv)
+============================================================
+Date         Time       BP (mmHg)       BPM
+------------------------------------------------------------
+2025-12-27   10:03:23   120/80          72
+2025-12-27   14:30:45   135/85          75
+2025-12-27   18:15:22   118/78          68
+------------------------------------------------------------
+Total readings shown: 3 of 25
+```
+
 ### Configuration
 
 #### Show current configuration
