@@ -104,6 +104,23 @@ fi
 ln -s "$SCRIPT_DIR/bp_tracker" "$PACKAGE_LINK"
 echo -e "${GREEN}✓${NC} Linked"
 
+# Create default configuration
+CONFIG_DIR="$HOME/.config/bp-tracker"
+CONFIG_FILE="$CONFIG_DIR/config.yaml"
+DATA_DIR="$HOME/.local/share/bp-tracker"
+CSV_FILE="$DATA_DIR/blood_pressure.csv"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo -n "Creating default configuration... "
+    mkdir -p "$CONFIG_DIR"
+    cat > "$CONFIG_FILE" << EOF
+csv_file_path: $CSV_FILE
+EOF
+    echo -e "${GREEN}✓${NC} $CONFIG_FILE"
+else
+    echo -e "${YELLOW}⚠${NC} Configuration already exists, preserving: $CONFIG_FILE"
+fi
+
 # Check if ~/.local/bin is in PATH
 echo -n "Checking PATH... "
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
