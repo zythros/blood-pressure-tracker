@@ -14,7 +14,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Blood Pressure Tracker',
-    url='https://github.com/yourusername/bp-tracker',
+    url='https://github.com/zythros/blood-pressure-tracker',
     packages=find_packages(),
     install_requires=[
         'PyYAML>=6.0',
