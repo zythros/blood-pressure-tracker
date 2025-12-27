@@ -4,6 +4,7 @@
 import argparse
 import sys
 from pathlib import Path
+from datetime import datetime
 from .config import Config, ConfigError
 from .storage import CSVStorage, StorageError
 from .validator import BPValidator, ValidationError
@@ -165,6 +166,122 @@ def list_readings_command(args: argparse.Namespace, config: Config) -> None:
         sys.exit(1)
 
 
+def chart_command(args: argparse.Namespace, config: Config) -> None:
+    """Generate and display a chart of blood pressure readings.
+
+    Args:
+        args: Parsed command-line arguments
+        config: Config instance
+    """
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
+    except ImportError:
+        print("Error: matplotlib is required for charting.", file=sys.stderr)
+        print("Install it with: pip install matplotlib", file=sys.stderr)
+        print("Or: sudo pacman -S python-matplotlib", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        csv_path = config.get_csv_path()
+        storage = CSVStorage(csv_path)
+
+        if not csv_path.exists():
+            print(f"No readings found. CSV file does not exist: {csv_path}", file=sys.stderr)
+            print(f"\nLog your first reading with: bp-tracker <systolic> <diastolic> <bpm>")
+            sys.exit(1)
+
+        readings = storage.read_all()
+
+        if not readings:
+            print("No readings found in CSV file.")
+            sys.exit(1)
+
+        if len(readings) < 2:
+            print("Need at least 2 readings to create a chart.")
+            sys.exit(1)
+
+        # Parse dates and values
+        dates = []
+        systolic_values = []
+        diastolic_values = []
+        bpm_values = []
+
+        for reading in readings:
+            date_str = f"{reading['Date']} {reading['Time']}"
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+            dates.append(date_obj)
+            systolic_values.append(int(reading['Systolic']))
+            diastolic_values.append(int(reading['Diastolic']))
+            bpm_values.append(int(reading['BPM']))
+
+        # Determine how many readings to chart
+        if args.last:
+            dates = dates[-args.last:]
+            systolic_values = systolic_values[-args.last:]
+            diastolic_values = diastolic_values[-args.last:]
+            bpm_values = bpm_values[-args.last:]
+
+        # Create figure with two subplots
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
+        fig.suptitle('Blood Pressure Tracking', fontsize=16, fontweight='bold')
+
+        # Plot blood pressure
+        ax1.plot(dates, systolic_values, marker='o', linestyle='-',
+                linewidth=2, markersize=6, label='Systolic', color='#E74C3C')
+        ax1.plot(dates, diastolic_values, marker='o', linestyle='-',
+                linewidth=2, markersize=6, label='Diastolic', color='#3498DB')
+        ax1.set_ylabel('Blood Pressure (mmHg)', fontsize=12, fontweight='bold')
+        ax1.set_title('Blood Pressure Trend', fontsize=14)
+        ax1.legend(loc='upper right', fontsize=10)
+        ax1.grid(True, alpha=0.3)
+        ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+
+        # Add reference lines for normal BP (optional)
+        ax1.axhline(y=120, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+        ax1.axhline(y=80, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+
+        # Plot heart rate
+        ax2.plot(dates, bpm_values, marker='o', linestyle='-',
+                linewidth=2, markersize=6, label='Heart Rate', color='#2ECC71')
+        ax2.set_xlabel('Date', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('Heart Rate (BPM)', fontsize=12, fontweight='bold')
+        ax2.set_title('Heart Rate Trend', fontsize=14)
+        ax2.legend(loc='upper right', fontsize=10)
+        ax2.grid(True, alpha=0.3)
+        ax2.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+
+        # Rotate x-axis labels for better readability
+        plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
+        plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45)
+
+        plt.tight_layout()
+
+        # Save to file if requested
+        if args.output:
+            output_path = Path(args.output)
+            plt.savefig(output_path, dpi=150, bbox_inches='tight')
+            print(f"Chart saved to: {output_path}")
+        else:
+            # Display interactively
+            print(f"Displaying chart for {len(dates)} readings...")
+            print("Close the chart window to continue.")
+            plt.show()
+
+    except StorageError as e:
+        print(f"Storage Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except KeyError as e:
+        print(f"CSV Format Error: Missing column {e}", file=sys.stderr)
+        sys.exit(1)
+    except ValueError as e:
+        print(f"Data Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def create_reading_parser() -> argparse.ArgumentParser:
     """Create argument parser for blood pressure readings.
 
@@ -178,6 +295,7 @@ def create_reading_parser() -> argparse.ArgumentParser:
                '  bp-tracker 120 80 72          # Log reading via command line\n'
                '  bp-tracker                    # Interactive mode\n'
                '  bp-tracker list               # View past readings\n'
+               '  bp-tracker chart              # Display trend chart\n'
                '  bp-tracker config --show      # Show configuration',
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -239,6 +357,27 @@ def create_list_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def create_chart_parser() -> argparse.ArgumentParser:
+    """Create argument parser for chart command.
+
+    Returns:
+        Configured ArgumentParser for chart
+    """
+    parser = argparse.ArgumentParser(
+        prog='bp-tracker chart',
+        description='Generate a chart of blood pressure trends'
+    )
+
+    parser.add_argument('--last', type=int, metavar='N',
+                       help='Chart last N readings (default: all)')
+    parser.add_argument('--output', '-o', type=str, metavar='FILE',
+                       help='Save chart to file (PNG/SVG/PDF) instead of displaying')
+    parser.add_argument('--config', type=str, metavar='PATH',
+                       help='Path to config file (default: ~/.config/bp-tracker/config.yaml)')
+
+    return parser
+
+
 def main():
     """Main entry point for the CLI application."""
     # Check if first argument is 'list' command
@@ -251,6 +390,22 @@ def main():
             config_path = Path(args.config) if args.config else None
             config = Config(config_path)
             list_readings_command(args, config)
+        except ConfigError as e:
+            print(f"Configuration Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"Unexpected Error: {e}", file=sys.stderr)
+            sys.exit(1)
+    # Check if first argument is 'chart' command
+    elif len(sys.argv) > 1 and sys.argv[1] == 'chart':
+        # Use chart parser
+        parser = create_chart_parser()
+        args = parser.parse_args(sys.argv[2:])  # Parse args after 'chart'
+
+        try:
+            config_path = Path(args.config) if args.config else None
+            config = Config(config_path)
+            chart_command(args, config)
         except ConfigError as e:
             print(f"Configuration Error: {e}", file=sys.stderr)
             sys.exit(1)

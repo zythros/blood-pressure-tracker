@@ -116,6 +116,41 @@ Date         Time       BP (mmHg)       BPM
 Total readings shown: 3 of 25
 ```
 
+### Visualize trends with charts
+
+Generate visual charts of your blood pressure trends:
+
+```bash
+# Display interactive chart (opens in window)
+bp-tracker chart
+
+# Chart only the last 30 readings
+bp-tracker chart --last 30
+
+# Save chart to file instead of displaying
+bp-tracker chart --output bp-chart.png
+bp-tracker chart -o report.pdf
+```
+
+**Requirements:** Matplotlib is required for charting. Install it with:
+```bash
+# Arch Linux
+sudo pacman -S python-matplotlib
+
+# Debian/Ubuntu
+sudo apt install python3-matplotlib
+
+# Or via pip
+pip install matplotlib
+```
+
+**Features:**
+- Two-panel chart showing BP and heart rate trends
+- Reference lines at 120/80 mmHg for normal BP
+- Color-coded lines (red=systolic, blue=diastolic, green=heart rate)
+- Interactive zoom and pan (when displayed)
+- Save as PNG, PDF, or SVG
+
 ### Configuration
 
 #### Show current configuration
@@ -213,7 +248,8 @@ Readings will now be saved to your Dropbox folder.
 ## Requirements
 
 - Python 3.7 or higher
-- PyYAML
+- PyYAML (required)
+- Matplotlib (optional, for `bp-tracker chart` command)
 
 ## License
 
