@@ -249,7 +249,7 @@ def chart_command(args: argparse.Namespace, config: Config) -> None:
         categories = BPCategoryClassifier.get_all_categories()
         for cat in categories:
             ax1.axhspan(cat.value - 0.5, cat.value + 0.5,
-                       facecolor=cat.color, alpha=0.2, zorder=1)
+                       facecolor=cat.color, alpha=0.3, zorder=1)
 
         # Configure Y-axis with numeric values and text labels
         ax1.set_ylim(0.5, 6.5)
