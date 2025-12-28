@@ -152,12 +152,8 @@ def list_readings_command(args: argparse.Namespace, config: Config) -> None:
         # Print readings
         for reading in readings_to_show:
             bp_reading = f"{reading['Systolic']}/{reading['Diastolic']}"
-            category = BPCategoryClassifier.classify(
-                int(reading['Systolic']),
-                int(reading['Diastolic'])
-            )
             print(f"{reading['Date']:<12} {reading['Time']:<10} {bp_reading:<15} "
-                  f"{reading['BPM']:<5} {category.abbreviation:<10}")
+                  f"{reading['BPM']:<5} {reading['Category']:<10}")
 
         print("-" * 70)
         print(f"Total readings shown: {len(readings_to_show)} of {len(readings)}")
@@ -220,15 +216,13 @@ def chart_command(args: argparse.Namespace, config: Config) -> None:
             date_str = f"{reading['Date']} {reading['Time']}"
             date_obj = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
             dates.append(date_obj)
-            sys_val = int(reading['Systolic'])
-            dia_val = int(reading['Diastolic'])
-            systolic_values.append(sys_val)
-            diastolic_values.append(dia_val)
+            systolic_values.append(int(reading['Systolic']))
+            diastolic_values.append(int(reading['Diastolic']))
             bpm_values.append(int(reading['BPM']))
 
-            # Calculate category
-            category = BPCategoryClassifier.classify(sys_val, dia_val)
-            category_values.append(category.value)
+            # Get category value from CSV (calculated on-the-fly for old data)
+            category_value = BPCategoryClassifier.get_value_from_abbreviation(reading['Category'])
+            category_values.append(category_value)
 
         # Determine how many readings to chart
         if args.last:

@@ -34,17 +34,18 @@ class BPReading:
                    bpm=bpm, timestamp=timestamp)
 
     def to_csv_row(self) -> list:
-        """Convert to CSV row format: [Date, Time, Systolic, Diastolic, BPM].
+        """Convert to CSV row format: [Date, Time, Systolic, Diastolic, BPM, Category].
 
         Returns:
-            List containing date, time, and BP values
+            List containing date, time, BP values, and category
         """
         return [
             self.timestamp.strftime('%Y-%m-%d'),
             self.timestamp.strftime('%H:%M:%S'),
             self.systolic,
             self.diastolic,
-            self.bpm
+            self.bpm,
+            self.category.abbreviation
         ]
 
     @property

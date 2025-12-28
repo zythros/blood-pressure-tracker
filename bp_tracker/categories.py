@@ -131,3 +131,21 @@ class BPCategoryClassifier:
             BPCategoryClassifier.HYPERTENSION_STAGE_2,
             BPCategoryClassifier.HYPERTENSIVE_CRISIS,
         )
+
+    @staticmethod
+    def get_value_from_abbreviation(abbreviation: str) -> int:
+        """Get the numeric value (1-6) for a category abbreviation.
+
+        Args:
+            abbreviation: Category abbreviation (Low, Normal, Elevated, High-1, High-2, Crisis)
+
+        Returns:
+            Numeric value 1-6 for the category
+
+        Raises:
+            ValueError: If abbreviation is not recognized
+        """
+        for cat in BPCategoryClassifier.get_all_categories():
+            if cat.abbreviation == abbreviation:
+                return cat.value
+        raise ValueError(f"Unknown category abbreviation: {abbreviation}")

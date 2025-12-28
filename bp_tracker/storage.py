@@ -15,7 +15,7 @@ class StorageError(Exception):
 class CSVStorage:
     """Manages CSV file storage for blood pressure readings."""
 
-    HEADERS = ['Date', 'Time', 'Systolic', 'Diastolic', 'BPM']
+    HEADERS = ['Date', 'Time', 'Systolic', 'Diastolic', 'BPM', 'Category']
 
     def __init__(self, csv_path: Path):
         """Initialize storage with CSV file path.
@@ -63,6 +63,10 @@ class CSVStorage:
 
         Raises:
             StorageError: If reading fails
+
+        Notes:
+            Handles backwards compatibility - if CSV doesn't have Category column,
+            it calculates the category on-the-fly from systolic/diastolic values.
         """
         if not self.csv_path.exists():
             return []
@@ -72,6 +76,14 @@ class CSVStorage:
             with open(self.csv_path, 'r', newline='') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
+                    # Backwards compatibility: calculate category if not present
+                    if 'Category' not in row or not row['Category']:
+                        from .categories import BPCategoryClassifier
+                        category = BPCategoryClassifier.classify(
+                            int(row['Systolic']),
+                            int(row['Diastolic'])
+                        )
+                        row['Category'] = category.abbreviation
                     readings.append(row)
         except Exception as e:
             raise StorageError(f"Failed to read CSV file: {e}")
