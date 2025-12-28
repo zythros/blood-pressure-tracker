@@ -73,7 +73,9 @@ def command_mode(args: argparse.Namespace, storage: CSVStorage) -> None:
         reading = BPReading.create(systolic, diastolic, bpm)
         storage.append_reading(reading)
 
-        print(f"Reading saved: {systolic}/{diastolic} mmHg, {bpm} BPM, {reading.category.abbreviation}")
+        print(f"\nReading saved successfully!")
+        print(f"  {reading.timestamp.strftime('%Y-%m-%d %H:%M:%S')} - "
+              f"{systolic}/{diastolic} mmHg, {bpm} BPM, {reading.category.abbreviation}")
 
     except ValidationError as e:
         print(f"Validation Error: {e}", file=sys.stderr)
