@@ -9,6 +9,7 @@ from .config import Config, ConfigError
 from .storage import CSVStorage, StorageError
 from .validator import BPValidator, ValidationError
 from .models import BPReading
+from .categories import BPCategoryClassifier
 
 
 def interactive_mode(storage: CSVStorage) -> None:
@@ -142,16 +143,21 @@ def list_readings_command(args: argparse.Namespace, config: Config) -> None:
 
         # Print header
         print(f"\nBlood Pressure Readings (from {csv_path})")
-        print("=" * 60)
-        print(f"{'Date':<12} {'Time':<10} {'BP (mmHg)':<15} {'BPM':<5}")
-        print("-" * 60)
+        print("=" * 70)
+        print(f"{'Date':<12} {'Time':<10} {'BP (mmHg)':<15} {'BPM':<5} {'Category':<10}")
+        print("-" * 70)
 
         # Print readings
         for reading in readings_to_show:
             bp_reading = f"{reading['Systolic']}/{reading['Diastolic']}"
-            print(f"{reading['Date']:<12} {reading['Time']:<10} {bp_reading:<15} {reading['BPM']:<5}")
+            category = BPCategoryClassifier.classify(
+                int(reading['Systolic']),
+                int(reading['Diastolic'])
+            )
+            print(f"{reading['Date']:<12} {reading['Time']:<10} {bp_reading:<15} "
+                  f"{reading['BPM']:<5} {category.abbreviation:<10}")
 
-        print("-" * 60)
+        print("-" * 70)
         print(f"Total readings shown: {len(readings_to_show)} of {len(readings)}")
         print()
 
@@ -206,14 +212,21 @@ def chart_command(args: argparse.Namespace, config: Config) -> None:
         systolic_values = []
         diastolic_values = []
         bpm_values = []
+        category_values = []
 
         for reading in readings:
             date_str = f"{reading['Date']} {reading['Time']}"
             date_obj = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
             dates.append(date_obj)
-            systolic_values.append(int(reading['Systolic']))
-            diastolic_values.append(int(reading['Diastolic']))
+            sys_val = int(reading['Systolic'])
+            dia_val = int(reading['Diastolic'])
+            systolic_values.append(sys_val)
+            diastolic_values.append(dia_val)
             bpm_values.append(int(reading['BPM']))
+
+            # Calculate category
+            category = BPCategoryClassifier.classify(sys_val, dia_val)
+            category_values.append(category.value)
 
         # Determine how many readings to chart
         if args.last:
@@ -221,39 +234,61 @@ def chart_command(args: argparse.Namespace, config: Config) -> None:
             systolic_values = systolic_values[-args.last:]
             diastolic_values = diastolic_values[-args.last:]
             bpm_values = bpm_values[-args.last:]
+            category_values = category_values[-args.last:]
 
-        # Create figure with two subplots
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
+        # Create figure with three subplots
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 12))
         fig.suptitle('Blood Pressure Tracking', fontsize=16, fontweight='bold')
 
-        # Plot blood pressure
-        ax1.plot(dates, systolic_values, marker='o', linestyle='-',
-                linewidth=2, markersize=6, label='Systolic', color='#E74C3C')
-        ax1.plot(dates, diastolic_values, marker='o', linestyle='-',
-                linewidth=2, markersize=6, label='Diastolic', color='#3498DB')
-        ax1.set_ylabel('Blood Pressure (mmHg)', fontsize=12, fontweight='bold')
-        ax1.set_title('Blood Pressure Trend', fontsize=14)
-        ax1.legend(loc='upper right', fontsize=10)
-        ax1.grid(True, alpha=0.3)
+        # === PANEL 1: Blood Pressure Category ===
+        # Plot category line
+        ax1.plot(dates, category_values, marker='o', linestyle='-',
+                linewidth=2, markersize=6, color='#34495E', zorder=10)
+
+        # Add colored horizontal zones for each category
+        categories = BPCategoryClassifier.get_all_categories()
+        for cat in categories:
+            ax1.axhspan(cat.value - 0.5, cat.value + 0.5,
+                       facecolor=cat.color, alpha=0.2, zorder=1)
+
+        # Configure Y-axis with numeric values and text labels
+        ax1.set_ylim(0.5, 6.5)
+        ax1.set_yticks([1, 2, 3, 4, 5, 6])
+        ax1.set_yticklabels([cat.abbreviation for cat in categories])
+        ax1.set_ylabel('BP Category', fontsize=12, fontweight='bold')
+        ax1.set_title('Blood Pressure Category Trend', fontsize=14)
+        ax1.grid(True, alpha=0.3, axis='x')  # Only vertical grid lines
         ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
 
-        # Add reference lines for normal BP (optional)
-        ax1.axhline(y=120, color='gray', linestyle='--', alpha=0.5, linewidth=1)
-        ax1.axhline(y=80, color='gray', linestyle='--', alpha=0.5, linewidth=1)
-
-        # Plot heart rate
-        ax2.plot(dates, bpm_values, marker='o', linestyle='-',
-                linewidth=2, markersize=6, label='Heart Rate', color='#2ECC71')
-        ax2.set_xlabel('Date', fontsize=12, fontweight='bold')
-        ax2.set_ylabel('Heart Rate (BPM)', fontsize=12, fontweight='bold')
-        ax2.set_title('Heart Rate Trend', fontsize=14)
+        # === PANEL 2: Blood Pressure Values ===
+        ax2.plot(dates, systolic_values, marker='o', linestyle='-',
+                linewidth=2, markersize=6, label='Systolic', color='#E74C3C')
+        ax2.plot(dates, diastolic_values, marker='o', linestyle='-',
+                linewidth=2, markersize=6, label='Diastolic', color='#3498DB')
+        ax2.set_ylabel('Blood Pressure (mmHg)', fontsize=12, fontweight='bold')
+        ax2.set_title('Blood Pressure Trend', fontsize=14)
         ax2.legend(loc='upper right', fontsize=10)
         ax2.grid(True, alpha=0.3)
         ax2.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
 
+        # Add reference lines for normal BP
+        ax2.axhline(y=120, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+        ax2.axhline(y=80, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+
+        # === PANEL 3: Heart Rate ===
+        ax3.plot(dates, bpm_values, marker='o', linestyle='-',
+                linewidth=2, markersize=6, label='Heart Rate', color='#2ECC71')
+        ax3.set_xlabel('Date', fontsize=12, fontweight='bold')
+        ax3.set_ylabel('Heart Rate (BPM)', fontsize=12, fontweight='bold')
+        ax3.set_title('Heart Rate Trend', fontsize=14)
+        ax3.legend(loc='upper right', fontsize=10)
+        ax3.grid(True, alpha=0.3)
+        ax3.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+
         # Rotate x-axis labels for better readability
         plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
         plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45)
+        plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45)
 
         plt.tight_layout()
 

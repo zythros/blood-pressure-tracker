@@ -46,3 +46,14 @@ class BPReading:
             self.diastolic,
             self.bpm
         ]
+
+    @property
+    def category(self) -> 'BPCategory':
+        """Get the blood pressure category for this reading.
+
+        Returns:
+            BPCategory instance representing the classification based on
+            American Heart Association guidelines
+        """
+        from .categories import BPCategoryClassifier
+        return BPCategoryClassifier.classify(self.systolic, self.diastolic)
