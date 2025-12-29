@@ -36,6 +36,36 @@ class CSVStorage:
                 writer = csv.writer(f)
                 writer.writerow(self.HEADERS)
 
+    def _migrate_headers_if_needed(self) -> None:
+        """Migrate old CSV format (without Category) to new format (with Category).
+
+        This updates the header row if it doesn't include the Category column.
+        """
+        if not self.csv_path.exists() or self.csv_path.stat().st_size == 0:
+            return
+
+        try:
+            # Read the first line to check headers
+            with open(self.csv_path, 'r', newline='') as f:
+                first_line = f.readline().strip()
+
+            # Check if Category column is missing
+            if 'Category' not in first_line:
+                # Read entire file
+                with open(self.csv_path, 'r', newline='') as f:
+                    lines = f.readlines()
+
+                # Update header
+                lines[0] = ','.join(self.HEADERS) + '\n'
+
+                # Write back
+                with open(self.csv_path, 'w', newline='') as f:
+                    f.writelines(lines)
+        except Exception:
+            # If migration fails, continue without it - backwards compatibility
+            # in read_all() will handle old format
+            pass
+
     def append_reading(self, reading: BPReading) -> None:
         """Append a single reading to the CSV file.
 
@@ -48,7 +78,23 @@ class CSVStorage:
         # Ensure file exists with headers
         self.initialize()
 
+        # Migrate old format to new format if needed
+        self._migrate_headers_if_needed()
+
         try:
+            # Check if file ends with a newline, add one if it doesn't
+            # This prevents data from being appended to the last line
+            if self.csv_path.stat().st_size > 0:
+                with open(self.csv_path, 'rb') as f:
+                    f.seek(-1, 2)  # Seek to last byte
+                    last_char = f.read(1)
+                    needs_newline = last_char not in (b'\n', b'\r')
+
+                if needs_newline:
+                    with open(self.csv_path, 'a', newline='') as f:
+                        f.write('\n')
+
+            # Append the new reading
             with open(self.csv_path, 'a', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(reading.to_csv_row())
