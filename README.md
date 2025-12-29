@@ -5,11 +5,15 @@ A simple command-line tool for tracking blood pressure readings with configurabl
 ## Features
 
 - Track systolic, diastolic, and heart rate (BPM) readings
+- **Blood pressure category classification** based on American Heart Association guidelines
 - Automatic timestamp recording
 - Two input modes: interactive prompts or command-line arguments
+- View reading history with formatted tables
+- Visualize trends with interactive charts
 - Configurable CSV file location via YAML config
 - Input validation with medical range checking
 - Clean CSV export format for analysis in spreadsheet applications
+- Automatic migration from old data formats
 
 ## Installation
 
@@ -90,7 +94,7 @@ The tool will prompt you for:
 
 ### View past readings
 
-View your blood pressure history:
+View your blood pressure history with category classifications:
 
 ```bash
 # Show last 10 readings (default)
@@ -106,13 +110,13 @@ bp-tracker list --all
 Example output:
 ```
 Blood Pressure Readings (from ~/.local/share/bp-tracker/blood_pressure.csv)
-============================================================
-Date         Time       BP (mmHg)       BPM
-------------------------------------------------------------
-2025-12-27   10:03:23   120/80          72
-2025-12-27   14:30:45   135/85          75
-2025-12-27   18:15:22   118/78          68
-------------------------------------------------------------
+======================================================================
+Date         Time       BP (mmHg)       BPM   Category
+----------------------------------------------------------------------
+2025-12-27   10:03:23   120/80          72    High-1
+2025-12-27   14:30:45   135/85          75    High-1
+2025-12-27   18:15:22   118/78          68    Normal
+----------------------------------------------------------------------
 Total readings shown: 3 of 25
 ```
 
@@ -145,8 +149,10 @@ pip install matplotlib
 ```
 
 **Features:**
-- Two-panel chart showing BP and heart rate trends
-- Reference lines at 120/80 mmHg for normal BP
+- Three-panel chart:
+  - **Category trends** with colored zones (Low, Normal, Elevated, High-1, High-2, Crisis)
+  - **Blood pressure trends** with reference lines at 120/80 mmHg
+  - **Heart rate trends**
 - Color-coded lines (red=systolic, blue=diastolic, green=heart rate)
 - Interactive zoom and pan (when displayed)
 - Save as PNG, PDF, or SVG
@@ -192,12 +198,14 @@ Creates the default configuration file if it doesn't exist.
 The CSV file uses the following format:
 
 ```csv
-Date,Time,Systolic,Diastolic,BPM
-2025-12-27,14:30:45,120,80,72
-2025-12-27,18:15:22,118,78,68
+Date,Time,Systolic,Diastolic,BPM,Category
+2025-12-27,14:30:45,120,80,72,High-1
+2025-12-27,18:15:22,118,78,68,Normal
 ```
 
 This format is compatible with spreadsheet applications like Excel, Google Sheets, and LibreOffice Calc for easy analysis and visualization.
+
+**Note:** Old CSV files without the Category column are automatically migrated when you add new readings.
 
 ## Valid Ranges
 
@@ -209,6 +217,21 @@ The tool validates all input values to prevent data entry errors:
 
 If you enter a value outside these ranges, the tool will display an error message.
 
+## Blood Pressure Categories
+
+Readings are automatically classified according to American Heart Association guidelines:
+
+| Category | Systolic (mmHg) | Diastolic (mmHg) | Description |
+|----------|----------------|------------------|-------------|
+| **Low** | < 90 | OR < 60 | Hypotension |
+| **Normal** | < 120 | AND < 80 | Healthy blood pressure |
+| **Elevated** | 120-129 | AND < 80 | Warning zone |
+| **High-1** | 130-139 | OR 80-89 | Stage 1 Hypertension |
+| **High-2** | ≥ 140 | OR ≥ 90 | Stage 2 Hypertension |
+| **Crisis** | > 180 | OR > 120 | Seek medical attention |
+
+The category is displayed when you save a reading and shown in the list and chart commands.
+
 ## Examples
 
 ### Quick reading entry
@@ -217,7 +240,11 @@ If you enter a value outside these ranges, the tool will display an error messag
 bp-tracker 135 85 75
 ```
 
-Output: `Reading saved: 135/85 mmHg, 75 BPM`
+Output:
+```
+Reading saved successfully!
+  2025-12-28 14:30:45 - 135/85 mmHg, 75 BPM, High-1
+```
 
 ### Interactive session
 
@@ -233,7 +260,7 @@ Enter diastolic pressure: 82
 Enter heart rate (BPM): 70
 
 Reading saved successfully!
-  2025-12-27 14:30:45 - 128/82 mmHg, 70 BPM
+  2025-12-28 14:30:45 - 128/82 mmHg, 70 BPM, High-1
 ```
 
 ### Configure custom location
