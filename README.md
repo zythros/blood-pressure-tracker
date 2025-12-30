@@ -276,7 +276,7 @@ Readings will now be saved to your Dropbox folder.
 
 - Python 3.7 or higher
 - PyYAML (required)
-- Matplotlib (optional, for `bp-tracker chart` command)
+- Matplotlib (required)
 
 ## License
 

@@ -79,15 +79,14 @@ else
     fi
 fi
 
-# Check for matplotlib (optional, for chart command)
-echo -n "Checking for matplotlib (optional)... "
+# Check for matplotlib
+echo -n "Checking for matplotlib... "
 if python3 -c "import matplotlib" 2>/dev/null; then
     echo -e "${GREEN}✓${NC} Already installed"
 else
     echo -e "${YELLOW}✗${NC} Not installed"
     echo ""
-    echo "Matplotlib is optional but recommended for the 'chart' command."
-    echo "Without it, you can still log and list readings, but charting won't work."
+    echo "Matplotlib is required for the 'chart' command."
     echo ""
     echo "You can install it with:"
     echo ""
@@ -121,20 +120,13 @@ else
         elif command -v yum &> /dev/null; then
             sudo yum install -y python3-matplotlib
         else
-            echo "Could not install matplotlib automatically."
-            echo "You can install it later with: pip3 install matplotlib"
+            echo "Please install matplotlib manually and run this script again."
+            exit 1
         fi
-
-        # Verify installation
-        if python3 -c "import matplotlib" 2>/dev/null; then
-            echo -e "${GREEN}✓${NC} matplotlib installed"
-        else
-            echo -e "${YELLOW}⚠${NC} matplotlib installation may have failed"
-            echo "You can install it later for charting functionality"
-        fi
+        echo -e "${GREEN}✓${NC} matplotlib installed"
     else
-        echo -e "${YELLOW}⚠${NC} Skipping matplotlib (chart command won't work)"
-        echo "You can install it later with the command above"
+        echo "Installation cancelled. Please install matplotlib and try again."
+        exit 1
     fi
 fi
 
