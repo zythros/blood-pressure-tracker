@@ -9,7 +9,7 @@ long_description = readme_file.read_text() if readme_file.exists() else ''
 
 setup(
     name='bp-tracker',
-    version='1.0.0',
+    version='1.4.1',
     description='A simple CLI tool for tracking blood pressure readings',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -18,6 +18,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'PyYAML>=6.0',
+        'matplotlib>=3.5.0',
     ],
     entry_points={
         'console_scripts': [

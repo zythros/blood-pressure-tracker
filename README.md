@@ -28,8 +28,8 @@ cd blood-pressure-tracker
 ```
 
 The install script will:
-- Check for Python 3 and PyYAML
-- Offer to install PyYAML if not present
+- Check for Python 3, PyYAML, and matplotlib
+- Offer to install PyYAML and matplotlib if not present
 - Create a `bp-tracker` command in `~/.local/bin`
 - Add `~/.local/bin` to your PATH if needed
 
@@ -40,11 +40,11 @@ After installation, you can use `bp-tracker` from anywhere!
 If you prefer to install manually:
 
 ```bash
-# Install PyYAML (Arch Linux)
-sudo pacman -S python-yaml
+# Install dependencies (Arch Linux)
+sudo pacman -S python-yaml python-matplotlib
 
 # Or on Debian/Ubuntu
-sudo apt install python3-yaml
+sudo apt install python3-yaml python3-matplotlib
 
 # Clone the repository
 git clone https://github.com/zythros/blood-pressure-tracker.git
